@@ -35,7 +35,7 @@
 
 #include "base/logger.h"
 
-#ifdef BOOST_ASIO_SEPARATE_COMPILATION 
+#if defined(BOOST_ASIO_SEPARATE_COMPILATION) && !defined(BOOST_ASIO_HEADER_ONLY) 
 #include <boost/asio/impl/src.hpp>
 #endif
 
