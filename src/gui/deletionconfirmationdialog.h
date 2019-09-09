@@ -33,6 +33,8 @@
 #include <QPushButton>
 
 #include "base/preferences.h"
+#include "qglobal.h"
+#include "qpushbutton.h"
 #include "ui_deletionconfirmationdialog.h"
 #include "uithememanager.h"
 #include "utils.h"
@@ -45,6 +47,7 @@ public:
     DeletionConfirmationDialog(QWidget *parent, const int &size, const QString &name, bool defaultDeleteFiles)
         : QDialog(parent)
         , m_ui(new Ui::DeletionConfirmationDialog)
+        , m_keepFilesClicked(false)
     {
         m_ui->setupUi(this);
         if (size == 1)
@@ -60,8 +63,14 @@ public:
 
         m_ui->checkPermDelete->setChecked(defaultDeleteFiles || Preferences::instance()->deleteTorrentFilesAsDefault());
         connect(m_ui->checkPermDelete, &QCheckBox::clicked, this, &DeletionConfirmationDialog::updateRememberButtonState);
-        m_ui->buttonBox->button(QDialogButtonBox::Cancel)->setFocus();
 
+        QPushButton *keepFilesBtn = m_ui->buttonBox->addButton(tr("Keep Files"), QDialogButtonBox::AcceptRole);
+        connect(keepFilesBtn, &QPushButton::clicked, [this](bool)
+        {
+            this->m_keepFilesClicked = true;
+        });
+        keepFilesBtn->setFocus();
+  
         Utils::Gui::resize(this);
     }
 
@@ -72,7 +81,7 @@ public:
 
     bool shouldDeleteLocalFiles() const
     {
-        return m_ui->checkPermDelete->isChecked();
+        return m_ui->checkPermDelete->isChecked() && !m_keepFilesClicked;
     }
 
     static bool askForDeletionConfirmation(QWidget *parent, bool &deleteLocalFiles, const int &size, const QString &name)
@@ -99,6 +108,8 @@ private slots:
 
 private:
     Ui::DeletionConfirmationDialog *m_ui;
+
+    bool m_keepFilesClicked;
 };
 
 #endif // DELETIONCONFIRMATIONDIALOG_H
