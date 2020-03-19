@@ -82,8 +82,13 @@ public:
 
     void addMessage(const QString &message, const Log::MsgType &type = Log::NORMAL);
     void addPeer(const QString &ip, bool blocked, const QString &reason = {});
+    Log::Msg message(int index) const;
+    Log::Peer peer(int index) const;
     QVector<Log::Msg> getMessages(int lastKnownId = -1) const;
     QVector<Log::Peer> getPeers(int lastKnownId = -1) const;
+    
+    int messageCount() const;
+    int peerCount() const;
 
 signals:
     void newLogMessage(const Log::Msg &message);
@@ -96,7 +101,8 @@ private:
     static Logger *m_instance;
     boost::circular_buffer_space_optimized<Log::Msg> m_messages;
     boost::circular_buffer_space_optimized<Log::Peer> m_peers;
-    mutable QReadWriteLock m_lock;
+    mutable QReadWriteLock m_msgLock;
+    mutable QReadWriteLock m_peerLock;
     int m_msgCounter = 0;
     int m_peerCounter = 0;
 };

@@ -71,8 +71,8 @@ void Logger::freeInstance()
 
 void Logger::addMessage(const QString &message, const Log::MsgType &type)
 {
-    QWriteLocker locker(&m_lock);
-    const Log::Msg msg = {m_msgCounter++, QDateTime::currentMSecsSinceEpoch(), type, message.toHtmlEscaped()};
+    QWriteLocker locker(&m_msgLock);
+    const Log::Msg msg = {m_msgCounter++, QDateTime::currentMSecsSinceEpoch(), type, message};
     m_messages.push_back(msg);
     locker.unlock();
 
@@ -81,17 +81,29 @@ void Logger::addMessage(const QString &message, const Log::MsgType &type)
 
 void Logger::addPeer(const QString &ip, const bool blocked, const QString &reason)
 {
-    QWriteLocker locker(&m_lock);
-    const Log::Peer msg = {m_peerCounter++, QDateTime::currentMSecsSinceEpoch(), ip.toHtmlEscaped(), blocked, reason.toHtmlEscaped()};
+    QWriteLocker locker(&m_peerLock);
+    const Log::Peer msg = {m_peerCounter++, QDateTime::currentMSecsSinceEpoch(), ip, blocked, reason};
     m_peers.push_back(msg);
     locker.unlock();
 
     emit newLogPeer(msg);
 }
 
+Log::Msg Logger::message(const int index) const
+{
+    const QReadLocker locker(&m_msgLock);
+    return m_messages[index];
+}
+
+Log::Peer Logger::peer(const int index) const
+{
+    const QReadLocker locker(&m_peerLock);
+    return m_peers[index];
+}
+
 QVector<Log::Msg> Logger::getMessages(const int lastKnownId) const
 {
-    const QReadLocker locker(&m_lock);
+    const QReadLocker locker(&m_msgLock);
 
     const int diff = m_msgCounter - lastKnownId - 1;
     const int size = m_messages.size();
@@ -107,7 +119,7 @@ QVector<Log::Msg> Logger::getMessages(const int lastKnownId) const
 
 QVector<Log::Peer> Logger::getPeers(const int lastKnownId) const
 {
-    const QReadLocker locker(&m_lock);
+    const QReadLocker locker(&m_peerLock);
 
     const int diff = m_peerCounter - lastKnownId - 1;
     const int size = m_peers.size();
@@ -119,6 +131,18 @@ QVector<Log::Peer> Logger::getPeers(const int lastKnownId) const
         return {};
 
     return loadFromBuffer(m_peers, (size - diff));
+}
+
+int Logger::messageCount() const
+{
+    const QReadLocker locker(&m_msgLock);
+    return m_messages.size();
+}
+
+int Logger::peerCount() const
+{
+    const QReadLocker locker(&m_peerLock);
+    return m_peers.size();
 }
 
 void LogMsg(const QString &message, const Log::MsgType &type)

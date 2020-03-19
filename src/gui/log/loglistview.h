@@ -1,6 +1,7 @@
 /*
  * Bittorrent Client using Qt and libtorrent.
- * Copyright (C) 2011  Christophe Dumez <chris@qbittorrent.org>
+ * Copyright (C) 2020  Prince Gupta <jagannatharjun11@gmail.com>
+ * Copyright (C) 2019  sledgehammer999 <hammered999@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,33 +27,25 @@
  * exception statement from your version.
  */
 
-#ifndef EXECUTIONLOGWIDGET_H
-#define EXECUTIONLOGWIDGET_H
+#pragma once
 
-#include <QWidget>
+#include <QListView>
 
-#include "base/logger.h"
-
-
-namespace Ui
-{
-    class ExecutionLogWidget;
-}
-
-class LogFilterModel;
-
-class ExecutionLogWidget : public QWidget
+class LogListView : public QListView
 {
     Q_OBJECT
+    Q_DISABLE_COPY(LogListView)
 
 public:
-    ExecutionLogWidget(QWidget *parent, Log::MsgTypes types);
-    ~ExecutionLogWidget();
-    void setMsgTypes(Log::MsgTypes types);
+    explicit LogListView(QWidget *parent = nullptr);
+
+signals:
+    void resetModel();
+
+private slots:
+    void displayListMenu(const QPoint &pos);
+    void copySelection() const;
 
 private:
-    Ui::ExecutionLogWidget *m_ui;
-    LogFilterModel *m_msgFilterModel;
+    void keyPressEvent(QKeyEvent *event) override;
 };
-
-#endif // EXECUTIONLOGWIDGET_H

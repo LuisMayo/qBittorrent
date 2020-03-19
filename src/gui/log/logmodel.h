@@ -1,6 +1,7 @@
 /*
  * Bittorrent Client using Qt and libtorrent.
- * Copyright (C) 2011  Christophe Dumez <chris@qbittorrent.org>
+ * Copyright (C) 2020  Prince Gupta <jagannatharjun11@gmail.com>
+ * Copyright (C) 2019  sledgehammer999 <hammered999@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -26,33 +27,70 @@
  * exception statement from your version.
  */
 
-#ifndef EXECUTIONLOGWIDGET_H
-#define EXECUTIONLOGWIDGET_H
+#pragma once
 
-#include <QWidget>
+#include <QAbstractListModel>
+#include <QCache>
 
-#include "base/logger.h"
-
-
-namespace Ui
+namespace Log
 {
-    class ExecutionLogWidget;
+    struct Msg;
+    struct Peer;
 }
 
-class LogFilterModel;
+class BaseLogModel : public QAbstractListModel
+{
+    Q_DISABLE_COPY(BaseLogModel)
 
-class ExecutionLogWidget : public QWidget
+public:
+    explicit BaseLogModel(int initialSize, QObject *parent = nullptr);
+
+    int rowCount(const QModelIndex &parent = {}) const override;
+    int columnCount(const QModelIndex &parent = {}) const override;
+    QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+    void reset();
+
+protected:
+    virtual QVariant rowData(int index, int role) const = 0;
+    void addNewMessage();
+
+private:
+    int m_startIndex = 0, m_msgCount = 0;
+
+    struct Item 
+    {
+        QVariant displayRole;
+        QVariant foregroundRole;
+        QVariant userRole;
+    };
+    mutable QCache<int, Item> m_cache;
+};
+
+class LogModel : public BaseLogModel 
 {
     Q_OBJECT
 
 public:
-    ExecutionLogWidget(QWidget *parent, Log::MsgTypes types);
-    ~ExecutionLogWidget();
-    void setMsgTypes(Log::MsgTypes types);
+    explicit LogModel(QObject * parent = nullptr);
+
+private slots:
+    void handleNewMessage(const Log::Msg &msg);
 
 private:
-    Ui::ExecutionLogWidget *m_ui;
-    LogFilterModel *m_msgFilterModel;
+    QVariant rowData(int id, int role) const override;
 };
 
-#endif // EXECUTIONLOGWIDGET_H
+class LogPeerModel : public BaseLogModel 
+{
+    Q_OBJECT
+
+public:
+    explicit LogPeerModel(QObject * parent = nullptr);
+
+private slots:
+    void handleNewMessage(const Log::Peer &msg);
+
+private:
+    QVariant rowData(int id, int role) const override;
+};
+
