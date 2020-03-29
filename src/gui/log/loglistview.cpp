@@ -32,7 +32,6 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QKeyEvent>
-#include <QMenu>
 
 #include "uithememanager.h"
 
@@ -40,32 +39,11 @@ LogListView::LogListView(QWidget *parent)
     : QListView(parent)
 {
     setUniformItemSizes(true);
-
     setSelectionMode(QAbstractItemView::ExtendedSelection);
 
 #if defined(Q_OS_MAC)
     setAttribute(Qt::WA_MacShowFocusRect, false);
 #endif
-
-    setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(this, &QWidget::customContextMenuRequested, this, &LogListView::displayListMenu);
-}
-
-void LogListView::displayListMenu(const QPoint &pos)
-{
-    QMenu *menu = new QMenu(this);
-    menu->setAttribute(Qt::WA_DeleteOnClose);
-
-    // don't show copy action if no row is selected
-    if (currentIndex().isValid()) {
-        const QAction *copyAct = menu->addAction(UIThemeManager::instance()->getIcon("edit-copy"), tr("Copy"));
-        connect(copyAct, &QAction::triggered, this, &LogListView::copySelection);
-    }
-
-    const QAction *clearAct = menu->addAction(UIThemeManager::instance()->getIcon("edit-clear"), tr("Clear"));
-    connect(clearAct, &QAction::triggered, this, &LogListView::resetModel);
-
-    menu->popup(mapToGlobal(pos));
 }
 
 void LogListView::keyPressEvent(QKeyEvent *event)

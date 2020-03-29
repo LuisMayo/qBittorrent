@@ -33,13 +33,16 @@
 
 #include "base/logger.h"
 
-
 namespace Ui
 {
     class ExecutionLogWidget;
 }
 
+class BaseLogModel;
 class LogFilterModel;
+class LogListView;
+class LogMessageModel;
+class LogPeerModel;
 
 class ExecutionLogWidget : public QWidget
 {
@@ -50,9 +53,19 @@ public:
     ~ExecutionLogWidget();
     void setMsgTypes(Log::MsgTypes types);
 
+private slots:
+    void messageViewContextMenu(const QPoint &pos);
+    void peerViewContextMenu(const QPoint &pos);
+
 private:
     Ui::ExecutionLogWidget *m_ui;
-    LogFilterModel *m_msgFilterModel;
+    LogMessageModel *m_messageModel;
+    LogPeerModel *m_peerModel;
+    LogFilterModel *m_messageFilterModel;
+    LogListView *m_messageView;
+    LogListView *m_peerView;
+
+    void displayContextMenu(const QPoint &pos, LogListView *view, BaseLogModel *model) const;
 };
 
 #endif // EXECUTIONLOGWIDGET_H

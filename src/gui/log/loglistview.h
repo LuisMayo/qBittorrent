@@ -39,11 +39,7 @@ class LogListView : public QListView
 public:
     explicit LogListView(QWidget *parent = nullptr);
 
-signals:
-    void resetModel();
-
-private slots:
-    void displayListMenu(const QPoint &pos);
+public slots:
     void copySelection() const;
 
 private:

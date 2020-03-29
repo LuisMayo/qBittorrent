@@ -40,6 +40,7 @@ namespace Log
 
 class BaseLogModel : public QAbstractListModel
 {
+    Q_OBJECT
     Q_DISABLE_COPY(BaseLogModel)
 
 public:
@@ -48,36 +49,40 @@ public:
     int rowCount(const QModelIndex &parent = {}) const override;
     int columnCount(const QModelIndex &parent = {}) const override;
     QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const override;
+
+public slots:
     void reset();
 
 protected:
-    virtual QVariant rowData(int index, int role) const = 0;
-    void addNewMessage();
-
-private:
-    int m_startIndex = 0, m_msgCount = 0;
-
     struct Item 
     {
         QVariant displayRole;
         QVariant foregroundRole;
         QVariant userRole;
     };
+    
+    void addNewMessage(int index);
+
+private:
+    int m_startIndex = 0;
+    int m_msgCount = 0;
     mutable QCache<int, Item> m_cache;
+
+    virtual Item rowData(int index) const = 0;
 };
 
-class LogModel : public BaseLogModel 
+class LogMessageModel : public BaseLogModel 
 {
     Q_OBJECT
 
 public:
-    explicit LogModel(QObject * parent = nullptr);
+    explicit LogMessageModel(QObject * parent = nullptr);
 
 private slots:
     void handleNewMessage(const Log::Msg &msg);
 
 private:
-    QVariant rowData(int id, int role) const override;
+    Item rowData(int index) const override;
 };
 
 class LogPeerModel : public BaseLogModel 
@@ -91,6 +96,6 @@ private slots:
     void handleNewMessage(const Log::Peer &msg);
 
 private:
-    QVariant rowData(int id, int role) const override;
+    Item rowData(int index) const override;
 };
 

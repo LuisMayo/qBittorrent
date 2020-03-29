@@ -29,6 +29,7 @@
 #include "executionlogwidget.h"
 
 #include <QDateTime>
+#include <QMenu>
 #include <QPalette>
 
 #include "base/global.h"
@@ -42,23 +43,25 @@
 ExecutionLogWidget::ExecutionLogWidget(QWidget *parent, const Log::MsgTypes types)
     : QWidget(parent)
     , m_ui(new Ui::ExecutionLogWidget)
-    , m_msgFilterModel(new LogFilterModel(types, this))
+    , m_messageModel(new LogMessageModel(this))
+    , m_peerModel(new LogPeerModel(this))
+    , m_messageFilterModel(new LogFilterModel(types, this))
+    , m_messageView(new LogListView(this))
+    , m_peerView(new LogListView(this))
 {
     m_ui->setupUi(this);
 
-    LogModel *msgModel = new LogModel(this);
-    m_msgFilterModel->setSourceModel(msgModel);
-    LogListView *msgList = new LogListView(this);
-    msgList->setModel(m_msgFilterModel);
-    connect(msgList, &LogListView::resetModel, [msgModel]() { msgModel->reset(); });
+    m_messageFilterModel->setSourceModel(m_messageModel);
+    m_messageView->setModel(m_messageFilterModel);
+    m_messageView->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_messageView, &LogListView::customContextMenuRequested, this, &ExecutionLogWidget::messageViewContextMenu);
 
-    LogListView *peerList = new LogListView(this);
-    LogPeerModel *peerModel = new LogPeerModel(this);
-    peerList->setModel(peerModel);
-    connect(peerList, &LogListView::resetModel, [peerModel]() { peerModel->reset(); });
+    m_peerView->setModel(m_peerModel);
+    m_peerView->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(m_peerView, &LogListView::customContextMenuRequested, this, &ExecutionLogWidget::peerViewContextMenu);
 
-    m_ui->tabGeneral->layout()->addWidget(msgList);
-    m_ui->tabBan->layout()->addWidget(peerList);
+    m_ui->tabGeneral->layout()->addWidget(m_messageView);
+    m_ui->tabBan->layout()->addWidget(m_peerView);
 
 #ifndef Q_OS_MACOS
     m_ui->tabConsole->setTabIcon(0, UIThemeManager::instance()->getIcon("view-calendar-journal"));
@@ -73,5 +76,32 @@ ExecutionLogWidget::~ExecutionLogWidget()
 
 void ExecutionLogWidget::setMsgTypes(const Log::MsgTypes types)
 {
-    m_msgFilterModel->setMsgTypes(types);
+    m_messageFilterModel->setMsgTypes(types);
+}
+
+void ExecutionLogWidget::messageViewContextMenu(const QPoint &pos)
+{
+    displayContextMenu(pos, m_messageView, m_messageModel);
+}
+
+void ExecutionLogWidget::peerViewContextMenu(const QPoint &pos)
+{
+    displayContextMenu(pos, m_peerView, m_peerModel);
+}
+
+void ExecutionLogWidget::displayContextMenu(const QPoint &pos, LogListView *view, BaseLogModel *model) const
+{
+    QMenu *menu = new QMenu;
+    menu->setAttribute(Qt::WA_DeleteOnClose);
+
+    // only show copy action if any of the row is selected
+    if (view->currentIndex().isValid()) {
+        const QAction *copyAct = menu->addAction(UIThemeManager::instance()->getIcon("edit-copy"), tr("Copy"));
+        connect(copyAct, &QAction::triggered, view, &LogListView::copySelection);
+    }
+
+    const QAction *clearAct = menu->addAction(UIThemeManager::instance()->getIcon("edit-clear"), tr("Clear"));
+    connect(clearAct, &QAction::triggered, model, &BaseLogModel::reset);
+
+    menu->popup(view->mapToGlobal(pos));
 }

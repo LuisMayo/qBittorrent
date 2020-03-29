@@ -34,17 +34,21 @@
 #include <QColor>
 #include <QPalette>
 
-#include <base/logger.h>
+#include "base/logger.h"
 
 BaseLogModel::BaseLogModel(int initialSize, QObject *parent)
     : QAbstractListModel(parent)
     , m_msgCount(initialSize)
-    , m_cache(69)
+    , m_cache(64)
 {
+    if (m_msgCount == 0)
+        m_startIndex = 0;
 }
 
-int BaseLogModel::rowCount(const QModelIndex &) const 
+int BaseLogModel::rowCount(const QModelIndex &) const
 {
+    if (m_startIndex == -1)
+        return 0;
     return m_msgCount;
 }
 
@@ -55,15 +59,14 @@ int BaseLogModel::columnCount(const QModelIndex &) const
 
 QVariant BaseLogModel::data(const QModelIndex &index, const int role) const
 {
-    static int hit = 0, miss = 0;
-    if (!index.isValid() || m_msgCount == 0)
+    if (!index.isValid() || (m_msgCount == 0))
         return {};
 
     const int i = m_msgCount - index.row() + m_startIndex - 1;
 
     Item *item = m_cache[i];
     if (!item) {
-        item = new Item{rowData(i, Qt::DisplayRole), rowData(i, Qt::ForegroundRole), rowData(i, Qt::UserRole)};
+        item = new Item{rowData(i)};
         m_cache.insert(i, item, 1);
     }
 
@@ -79,13 +82,13 @@ QVariant BaseLogModel::data(const QModelIndex &index, const int role) const
     }
 }
 
-void BaseLogModel::addNewMessage() 
+void BaseLogModel::addNewMessage(int index)
 {
+    if (m_startIndex == -1)
+        m_startIndex = index;
+
     beginInsertRows(QModelIndex(), 0, 0);
     ++m_msgCount;
-    const int i = m_msgCount + m_startIndex - 1;
-    Item *item = new Item{rowData(i, Qt::DisplayRole), rowData(i, Qt::ForegroundRole), rowData(i, Qt::UserRole)};
-    m_cache.insert(i, item, 1);
     endInsertRows();
 
     const int count = rowCount();
@@ -105,69 +108,72 @@ void BaseLogModel::reset()
     endResetModel();
 }
 
-LogModel::LogModel(QObject * parent) : BaseLogModel(Logger::instance()->messageCount(), parent) 
+LogMessageModel::LogMessageModel(QObject *parent) : 
+    BaseLogModel(Logger::instance()->messageCount(), parent)
 {
-    connect(Logger::instance(), &Logger::newLogMessage, this, &LogModel::handleNewMessage);
+    connect(Logger::instance(), &Logger::newLogMessage, this, &LogMessageModel::handleNewMessage);
 }
 
-void LogModel::handleNewMessage(const Log::Msg &)
+void LogMessageModel::handleNewMessage(const Log::Msg &msg)
 {
-    addNewMessage();
+    addNewMessage(msg.id);
 }
 
-QVariant LogModel::rowData(int id, int role) const
+BaseLogModel::Item LogMessageModel::rowData(const int index) const
 {
-    const Log::Msg msg = Logger::instance()->message(id);
-    switch (role) {
-    case Qt::DisplayRole: {
-        const QDateTime time = QDateTime::fromMSecsSinceEpoch(msg.timestamp);
-        return QString("%1 - %2").arg(time.toString(Qt::SystemLocaleShortDate), msg.message);
+    const Log::Msg msg = Logger::instance()->message(index);
+
+    Item item;
+    const QDateTime time = QDateTime::fromMSecsSinceEpoch(msg.timestamp);
+    item.displayRole = QString::fromLatin1("%1 - %2").arg(time.toString(Qt::SystemLocaleShortDate), msg.message);
+
+    switch (msg.type) {
+    // The RGB QColor constructor is used for performance
+    case Log::NORMAL:
+        item.foregroundRole = QApplication::palette().color(QPalette::WindowText);
+        break;
+
+    case Log::INFO:
+        item.foregroundRole = QColor(0, 0, 255); // blue
+        break;
+
+    case Log::WARNING:
+        item.foregroundRole = QColor(255, 165, 0);  // orange
+        break;
+
+    case Log::CRITICAL:
+        item.foregroundRole = QColor(255, 0, 0);  // red
+        break;
+
+    default:
+        Q_ASSERT(false && "invalid message type");
     }
-    case Qt::ForegroundRole:
-        switch (msg.type) {
-        // The RGB QColor constructor is used for performance
-        case Log::INFO:
-            return QColor(0, 0, 255); // blue
-        case Log::WARNING:
-            return QColor(255, 165, 0); // orange
-        case Log::CRITICAL:
-            return QColor(255, 0, 0); // red
-        default:
-            return QApplication::palette().color(QPalette::WindowText);
-        }
-    case Qt::UserRole:
-        return msg.type;
-    }
 
-    return {};
+    item.userRole = msg.type;
+    return item;
 }
 
-
-LogPeerModel::LogPeerModel(QObject * parent) : BaseLogModel(Logger::instance()->peerCount(), parent) 
+LogPeerModel::LogPeerModel(QObject *parent)
+    : BaseLogModel(Logger::instance()->peerCount(), parent)
 {
     connect(Logger::instance(), &Logger::newLogPeer, this, &LogPeerModel::handleNewMessage);
 }
 
-void LogPeerModel::handleNewMessage(const Log::Peer &)
+void LogPeerModel::handleNewMessage(const Log::Peer &peer)
 {
-    addNewMessage();
+    addNewMessage(peer.id);
 }
 
-QVariant LogPeerModel::rowData(int id, int role) const
+BaseLogModel::Item LogPeerModel::rowData(const int index) const
 {
-    const Log::Peer peer = Logger::instance()->peer(id);
+    const Log::Peer peer = Logger::instance()->peer(index);
 
-    if (role == Qt::DisplayRole) {
-        const QDateTime time = QDateTime::fromMSecsSinceEpoch(peer.timestamp);
-        QString text = QString("%1 - ").arg(time.toString(Qt::SystemLocaleShortDate));
+    const QDateTime time = QDateTime::fromMSecsSinceEpoch(peer.timestamp);
+    QString text = QString::fromLatin1("%1 - ").arg(time.toString(Qt::SystemLocaleShortDate))
+                   + (peer.blocked ? tr("%1 was blocked %2", "x.y.z.w was blocked").arg(peer.ip, peer.reason)
+                      : tr("%1 was banned", "x.y.z.w was banned").arg(peer.ip));
 
-        if (peer.blocked)
-            text.append(tr("%1 was blocked %2", "x.y.z.w was blocked").arg(peer.ip, peer.reason));
-        else
-            text.append(tr("%1 was banned", "x.y.z.w was banned").arg(peer.ip));
-
-        return text;
-    }
-
-    return {};
+    Item item;
+    item.displayRole = text;
+    return item;
 }
