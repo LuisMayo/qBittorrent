@@ -54,29 +54,29 @@ public slots:
     void reset();
 
 protected:
-    struct Item 
+    struct Item
     {
         QVariant displayRole;
         QVariant foregroundRole;
         QVariant userRole;
     };
-    
+
     void addNewMessage(int index);
 
 private:
+    virtual Item rowData(int index) const = 0;
+
     int m_startIndex = 0;
     int m_msgCount = 0;
     mutable QCache<int, Item> m_cache;
-
-    virtual Item rowData(int index) const = 0;
 };
 
-class LogMessageModel : public BaseLogModel 
+class LogMessageModel : public BaseLogModel
 {
     Q_OBJECT
 
 public:
-    explicit LogMessageModel(QObject * parent = nullptr);
+    explicit LogMessageModel(QObject *parent = nullptr);
 
 private slots:
     void handleNewMessage(const Log::Msg &msg);
@@ -85,12 +85,12 @@ private:
     Item rowData(int index) const override;
 };
 
-class LogPeerModel : public BaseLogModel 
+class LogPeerModel : public BaseLogModel
 {
     Q_OBJECT
 
 public:
-    explicit LogPeerModel(QObject * parent = nullptr);
+    explicit LogPeerModel(QObject *parent = nullptr);
 
 private slots:
     void handleNewMessage(const Log::Peer &msg);
@@ -98,4 +98,3 @@ private slots:
 private:
     Item rowData(int index) const override;
 };
-

@@ -51,6 +51,7 @@ class ExecutionLogWidget : public QWidget
 public:
     ExecutionLogWidget(QWidget *parent, Log::MsgTypes types);
     ~ExecutionLogWidget();
+    
     void setMsgTypes(Log::MsgTypes types);
 
 private slots:
@@ -58,14 +59,14 @@ private slots:
     void peerViewContextMenu(const QPoint &pos);
 
 private:
+    void displayContextMenu(const QPoint &pos, LogListView *view, BaseLogModel *model) const;
+
     Ui::ExecutionLogWidget *m_ui;
     LogMessageModel *m_messageModel;
     LogPeerModel *m_peerModel;
     LogFilterModel *m_messageFilterModel;
     LogListView *m_messageView;
     LogListView *m_peerView;
-
-    void displayContextMenu(const QPoint &pos, LogListView *view, BaseLogModel *model) const;
 };
 
 #endif // EXECUTIONLOGWIDGET_H

@@ -82,7 +82,7 @@ QVariant BaseLogModel::data(const QModelIndex &index, const int role) const
     }
 }
 
-void BaseLogModel::addNewMessage(int index)
+void BaseLogModel::addNewMessage(const int index)
 {
     if (m_startIndex == -1)
         m_startIndex = index;
@@ -108,8 +108,8 @@ void BaseLogModel::reset()
     endResetModel();
 }
 
-LogMessageModel::LogMessageModel(QObject *parent) : 
-    BaseLogModel(Logger::instance()->messageCount(), parent)
+LogMessageModel::LogMessageModel(QObject *parent)
+    : BaseLogModel(Logger::instance()->messageCount(), parent)
 {
     connect(Logger::instance(), &Logger::newLogMessage, this, &LogMessageModel::handleNewMessage);
 }
@@ -122,8 +122,8 @@ void LogMessageModel::handleNewMessage(const Log::Msg &msg)
 BaseLogModel::Item LogMessageModel::rowData(const int index) const
 {
     const Log::Msg msg = Logger::instance()->message(index);
-
     Item item;
+
     const QDateTime time = QDateTime::fromMSecsSinceEpoch(msg.timestamp);
     item.displayRole = QString::fromLatin1("%1 - %2").arg(time.toString(Qt::SystemLocaleShortDate), msg.message);
 
@@ -146,7 +146,8 @@ BaseLogModel::Item LogMessageModel::rowData(const int index) const
         break;
 
     default:
-        Q_ASSERT(false && "invalid message type");
+        Q_ASSERT(false);
+        break;
     }
 
     item.userRole = msg.type;
@@ -168,12 +169,10 @@ BaseLogModel::Item LogPeerModel::rowData(const int index) const
 {
     const Log::Peer peer = Logger::instance()->peer(index);
 
-    const QDateTime time = QDateTime::fromMSecsSinceEpoch(peer.timestamp);
-    QString text = QString::fromLatin1("%1 - ").arg(time.toString(Qt::SystemLocaleShortDate))
-                   + (peer.blocked ? tr("%1 was blocked %2", "x.y.z.w was blocked").arg(peer.ip, peer.reason)
-                      : tr("%1 was banned", "x.y.z.w was banned").arg(peer.ip));
+    const QString time = QDateTime::fromMSecsSinceEpoch(peer.timestamp).toString(Qt::SystemLocaleShortDate);
+    const QString text = QString::fromLatin1("%1 - %2").arg(time, (peer.blocked
+                                                                   ? tr("%1 was blocked %2", "x.y.z.w was blocked").arg(peer.ip, peer.reason)
+                                                                   : tr("%1 was banned", "x.y.z.w was banned").arg(peer.ip)));
 
-    Item item;
-    item.displayRole = text;
-    return item;
+    return {text, {}, {}};
 }
