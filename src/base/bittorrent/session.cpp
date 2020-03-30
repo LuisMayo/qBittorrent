@@ -402,6 +402,7 @@ Session::Session(QObject *parent)
     , m_slowTorrentsInactivityTimer(BITTORRENT_SESSION_KEY("SlowTorrentsInactivityTimer"), 60)
     , m_outgoingPortsMin(BITTORRENT_SESSION_KEY("OutgoingPortsMin"), 0)
     , m_outgoingPortsMax(BITTORRENT_SESSION_KEY("OutgoingPortsMax"), 0)
+    , m_UPnPLeaseDuration(BITTORRENT_SESSION_KEY("UPnPLeaseDuration"), 0)
     , m_ignoreLimitsOnLAN(BITTORRENT_SESSION_KEY("IgnoreLimitsOnLAN"), false)
     , m_includeOverheadInLimits(BITTORRENT_SESSION_KEY("IncludeOverheadInLimits"), false)
     , m_announceIP(BITTORRENT_SESSION_KEY("AnnounceIP"))
@@ -1367,6 +1368,10 @@ void Session::loadLTSettings(lt::settings_pack &settingsPack)
     settingsPack.set_int(lt::settings_pack::outgoing_port, outgoingPortsMin());
     settingsPack.set_int(lt::settings_pack::num_outgoing_ports, outgoingPortsMax() - outgoingPortsMin() + 1);
 
+#if (LIBTORRENT_VERSION_NUM >= 10206)
+    settingsPack.set_int(lt::settings_pack::upnp_lease_duration, UPnPLeaseDuration());
+#endif
+
     // Include overhead in transfer limits
     settingsPack.set_bool(lt::settings_pack::rate_limit_ip_overhead, includeOverheadInLimits());
     // IP address to announce to trackers
@@ -1810,7 +1815,7 @@ bool Session::deleteTorrent(const InfoHash &hash, const DeleteOption deleteOptio
     // Remove it from torrent resume directory
     const QDir resumeDataDir(m_resumeFolderPath);
     QStringList filters;
-    filters << QString("%1.*").arg(torrent->hash());
+    filters << QString::fromLatin1("%1.*").arg(torrent->hash());
     const QStringList files = resumeDataDir.entryList(filters, QDir::Files, QDir::Unsorted);
     for (const QString &file : files)
         Utils::Fs::forceRemove(resumeDataDir.absoluteFilePath(file));
@@ -2108,7 +2113,7 @@ bool Session::addTorrent_impl(CreateTorrentParams params, const MagnetUri &magne
                 const int len = Utils::ByteArray::midView(patchedFastresumeData, start, (end - start)).toInt();
                 if (len > 0) {
                     const QByteArray relativePath = Utils::ByteArray::midView(patchedFastresumeData, (end + 1), len);
-                    const QByteArray absolutePath = Profile::instance()->fromPortablePath(Utils::Fs::toUniformPath(QString::fromUtf8(relativePath))).toUtf8();
+                    const QByteArray absolutePath = Profile::instance()->fromPortablePath(QString::fromUtf8(relativePath)).toUtf8();
                     if (relativePath != absolutePath) {
                         const QByteArray replaceBefore = "9:save_path" + QByteArray::number(len) + ':' + relativePath;
                         const QByteArray replaceAfter = "9:save_path" + QByteArray::number(absolutePath.size()) + ':' + absolutePath;
@@ -2280,7 +2285,7 @@ bool Session::addTorrent_impl(CreateTorrentParams params, const MagnetUri &magne
         if (params.restored) {  // load from existing fastresume
             lt::error_code ec;
             p = lt::read_resume_data(fastresumeData, ec);
-            p.save_path = Profile::instance()->fromPortablePath(Utils::Fs::toUniformPath(fromLTString(p.save_path))).toStdString();
+            p.save_path = Profile::instance()->fromPortablePath(fromLTString(p.save_path)).toStdString();
         }
         else {  // new torrent
             if (!params.hasRootFolder)
@@ -2457,8 +2462,8 @@ void Session::exportTorrentFile(TorrentHandle *const torrent, TorrentExportFolde
              ((folder == TorrentExportFolder::Finished) && !finishedTorrentExportDirectory().isEmpty()));
 
     const QString validName = Utils::Fs::toValidFileSystemName(torrent->name());
-    const QString torrentFilename = QString("%1.torrent").arg(torrent->hash());
-    QString torrentExportFilename = QString("%1.torrent").arg(validName);
+    const QString torrentFilename = QString::fromLatin1("%1.torrent").arg(torrent->hash());
+    QString torrentExportFilename = QString::fromLatin1("%1.torrent").arg(validName);
     const QString torrentPath = QDir(m_resumeFolderPath).absoluteFilePath(torrentFilename);
     const QDir exportPath(folder == TorrentExportFolder::Regular ? torrentExportDirectory() : finishedTorrentExportDirectory());
     if (exportPath.exists() || exportPath.mkpath(exportPath.absolutePath())) {
@@ -2466,7 +2471,7 @@ void Session::exportTorrentFile(TorrentHandle *const torrent, TorrentExportFolde
         int counter = 0;
         while (QFile::exists(newTorrentPath) && !Utils::Fs::sameFiles(torrentPath, newTorrentPath)) {
             // Append number to torrent name to make it unique
-            torrentExportFilename = QString("%1 %2.torrent").arg(validName).arg(++counter);
+            torrentExportFilename = QString::fromLatin1("%1 %2.torrent").arg(validName).arg(++counter);
             newTorrentPath = exportPath.absoluteFilePath(torrentExportFilename);
         }
 
@@ -3554,6 +3559,19 @@ void Session::setOutgoingPortsMax(const int max)
     }
 }
 
+int Session::UPnPLeaseDuration() const
+{
+    return m_UPnPLeaseDuration;
+}
+
+void Session::setUPnPLeaseDuration(const int duration)
+{
+    if (duration != m_UPnPLeaseDuration) {
+        m_UPnPLeaseDuration = duration;
+        configureDeferred();
+    }
+}
+
 bool Session::ignoreLimitsOnLAN() const
 {
     return m_ignoreLimitsOnLAN;
@@ -3923,7 +3941,7 @@ void Session::handleTorrentResumeDataReady(TorrentHandle *const torrent, const l
     out.reserve(1024 * 1024);  // most fastresume file sizes are under 1 MB
     lt::bencode(std::back_inserter(out), data);
 
-    const QString filename = QString("%1.fastresume").arg(torrent->hash());
+    const QString filename = QString::fromLatin1("%1.fastresume").arg(torrent->hash());
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 10, 0))
     QMetaObject::invokeMethod(m_resumeDataSavingManager
         , [this, filename, out]() { m_resumeDataSavingManager->save(filename, out); });
@@ -4160,7 +4178,7 @@ void Session::startUpTorrents()
     int resumedTorrentsCount = 0;
     const auto startupTorrent = [this, &resumeDataDir, &resumedTorrentsCount](const TorrentResumeData &params)
     {
-        const QString filePath = resumeDataDir.filePath(QString("%1.torrent").arg(params.hash));
+        const QString filePath = resumeDataDir.filePath(QString::fromLatin1("%1.torrent").arg(params.hash));
         qDebug() << "Starting up torrent" << params.hash << "...";
         if (!addTorrent_impl(params.addTorrentData, params.magnetUri, TorrentInfo::loadFromFile(filePath), params.data))
             LogMsg(tr("Unable to resume torrent '%1'.", "e.g: Unable to resume torrent 'hash'.")
@@ -4220,8 +4238,8 @@ void Session::startUpTorrents()
             }
 
             if (numOfRemappedFiles > 0) {
-                LogMsg(QString(tr("Queue positions were corrected in %1 resume files"))
-                    .arg(numOfRemappedFiles), Log::CRITICAL);
+                LogMsg(tr("Queue positions were corrected in %1 resume files").arg(numOfRemappedFiles)
+                    , Log::CRITICAL);
             }
 
             // starting up downloading torrents (queue position > 0)
@@ -4407,6 +4425,11 @@ void Session::handleAlert(const lt::alert *a)
         case lt::storage_moved_failed_alert::alert_type:
             handleStorageMovedFailedAlert(static_cast<const lt::storage_moved_failed_alert*>(a));
             break;
+#if (LIBTORRENT_VERSION_NUM >= 10204)
+        case lt::socks5_alert::alert_type:
+            handleSocks5Alert(static_cast<const lt::socks5_alert *>(a));
+            break;
+#endif
         }
     }
     catch (const std::exception &exc) {
@@ -4942,3 +4965,13 @@ void Session::handleStateUpdateAlert(const lt::state_update_alert *p)
     if (!updatedTorrents.isEmpty())
         emit torrentsUpdated(updatedTorrents);
 }
+
+#if (LIBTORRENT_VERSION_NUM >= 10204)
+void Session::handleSocks5Alert(const lt::socks5_alert *p) const
+{
+    if (p->error) {
+        LogMsg(tr("SOCKS5 proxy error. Message: %1").arg(QString::fromStdString(p->message()))
+            , Log::WARNING);
+    }
+}
+#endif
