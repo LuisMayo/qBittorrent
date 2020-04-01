@@ -36,13 +36,37 @@
 
 #include "base/logger.h"
 
+struct Timer {
+    clock_t lastStartTime, elapsed = 0;
+    void start() {
+        lastStartTime = clock();
+    }
+    void pause() {
+        elapsed += clock() - lastStartTime;
+    }
+};
+
+struct BlockTimer {
+    Timer * timer;
+    BlockTimer(Timer * t) : timer{t} { t->start();}
+    ~BlockTimer() {
+        timer->pause();
+    }
+};
+
+
 BaseLogModel::BaseLogModel(int initialSize, QObject *parent)
     : QAbstractListModel(parent)
     , m_msgCount(initialSize)
     , m_cache(64)
+    , timer(new Timer())
 {
     if (m_msgCount == 0)
         m_startIndex = 0;
+}
+#include <iostream>
+BaseLogModel::~BaseLogModel() {
+    std::cerr << "timer " << (timer->elapsed / CLOCKS_PER_SEC) << std::endl;
 }
 
 int BaseLogModel::rowCount(const QModelIndex &) const
@@ -59,6 +83,7 @@ int BaseLogModel::columnCount(const QModelIndex &) const
 
 QVariant BaseLogModel::data(const QModelIndex &index, const int role) const
 {
+    BlockTimer t(timer);
     if (!index.isValid() || (m_msgCount == 0))
         return {};
 

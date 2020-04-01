@@ -45,6 +45,7 @@ class BaseLogModel : public QAbstractListModel
 
 public:
     explicit BaseLogModel(int initialSize, QObject *parent = nullptr);
+    ~BaseLogModel();
 
     int rowCount(const QModelIndex &parent = {}) const override;
     int columnCount(const QModelIndex &parent = {}) const override;
@@ -69,6 +70,7 @@ private:
     int m_startIndex = 0;
     int m_msgCount = 0;
     mutable QCache<int, Item> m_cache;
+    mutable struct Timer * timer;
 };
 
 class LogMessageModel : public BaseLogModel

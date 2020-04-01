@@ -88,7 +88,7 @@ if (Qt5Widgets_FOUND)
     set_target_properties(qBittorrent
         PROPERTIES
             OUTPUT_NAME qbittorrent
-            WIN32_EXECUTABLE True
+            WIN32_EXECUTABLE False
     )
 else(Qt5Widgets_FOUND)
     set_target_properties(qBittorrent
