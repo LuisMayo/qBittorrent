@@ -124,8 +124,8 @@ BaseLogModel::Item LogMessageModel::rowData(const int index) const
     const Log::Msg msg = Logger::instance()->message(index);
     Item item;
 
-    const QDateTime time = QDateTime::fromMSecsSinceEpoch(msg.timestamp);
-    item.displayRole = QString::fromLatin1("%1 - %2").arg(time.toString(Qt::SystemLocaleShortDate), msg.message);
+    const QString time = QDateTime::fromMSecsSinceEpoch(msg.timestamp).toString(Qt::SystemLocaleShortDate);
+    item.displayRole = QString::fromLatin1("%1 - %2").arg(time, msg.message);
 
     switch (msg.type) {
     // The RGB QColor constructor is used for performance
@@ -171,8 +171,8 @@ BaseLogModel::Item LogPeerModel::rowData(const int index) const
 
     const QString time = QDateTime::fromMSecsSinceEpoch(peer.timestamp).toString(Qt::SystemLocaleShortDate);
     const QString text = QString::fromLatin1("%1 - %2").arg(time, (peer.blocked
-                                                                   ? tr("%1 was blocked %2", "x.y.z.w was blocked").arg(peer.ip, peer.reason)
-                                                                   : tr("%1 was banned", "x.y.z.w was banned").arg(peer.ip)));
+            ? tr("%1 was blocked %2", "x.y.z.w was blocked").arg(peer.ip, peer.reason)
+            : tr("%1 was banned", "x.y.z.w was banned").arg(peer.ip)));
 
     return {text, {}, {}};
 }

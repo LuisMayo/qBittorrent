@@ -54,11 +54,15 @@ ExecutionLogWidget::ExecutionLogWidget(QWidget *parent, const Log::MsgTypes type
     m_messageFilterModel->setSourceModel(m_messageModel);
     m_messageView->setModel(m_messageFilterModel);
     m_messageView->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(m_messageView, &LogListView::customContextMenuRequested, this, &ExecutionLogWidget::messageViewContextMenu);
+    connect(m_messageView, &LogListView::customContextMenuRequested, [this](const QPoint &pos) {
+        displayContextMenu(pos, m_messageView, m_messageModel);
+    });
 
     m_peerView->setModel(m_peerModel);
     m_peerView->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(m_peerView, &LogListView::customContextMenuRequested, this, &ExecutionLogWidget::peerViewContextMenu);
+    connect(m_peerView, &LogListView::customContextMenuRequested, [this](const QPoint &pos) {
+        displayContextMenu(pos, m_peerView, m_peerModel);
+    });
 
     m_ui->tabGeneral->layout()->addWidget(m_messageView);
     m_ui->tabBan->layout()->addWidget(m_peerView);
@@ -79,17 +83,7 @@ void ExecutionLogWidget::setMsgTypes(const Log::MsgTypes types)
     m_messageFilterModel->setMsgTypes(types);
 }
 
-void ExecutionLogWidget::messageViewContextMenu(const QPoint &pos)
-{
-    displayContextMenu(pos, m_messageView, m_messageModel);
-}
-
-void ExecutionLogWidget::peerViewContextMenu(const QPoint &pos)
-{
-    displayContextMenu(pos, m_peerView, m_peerModel);
-}
-
-void ExecutionLogWidget::displayContextMenu(const QPoint &pos, LogListView *view, BaseLogModel *model) const
+void ExecutionLogWidget::displayContextMenu(const QPoint &pos, const LogListView *view, const BaseLogModel *model) const
 {
     QMenu *menu = new QMenu;
     menu->setAttribute(Qt::WA_DeleteOnClose);

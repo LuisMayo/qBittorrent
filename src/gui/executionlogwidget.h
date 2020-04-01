@@ -54,12 +54,8 @@ public:
     
     void setMsgTypes(Log::MsgTypes types);
 
-private slots:
-    void messageViewContextMenu(const QPoint &pos);
-    void peerViewContextMenu(const QPoint &pos);
-
 private:
-    void displayContextMenu(const QPoint &pos, LogListView *view, BaseLogModel *model) const;
+    void displayContextMenu(const QPoint &pos,const LogListView *view,const BaseLogModel *model) const;
 
     Ui::ExecutionLogWidget *m_ui;
     LogMessageModel *m_messageModel;
