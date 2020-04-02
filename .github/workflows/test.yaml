@@ -48,13 +48,13 @@ jobs:
     - name: install dependencies
       shell: pwsh
       run: |
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install qt5-base:x64-windows-static
+        ${{env.VCPKG_ROOT}}\vcpkg.exe install qt5-base:x64-windows-static-rel
         Remove-Item "${{env.VCPKG_ROOT}}\buildtrees" -Recurse
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install qt5-svg:x64-windows-static
+        ${{env.VCPKG_ROOT}}\vcpkg.exe install qt5-svg:x64-windows-static-rel
         Remove-Item "${{env.VCPKG_ROOT}}\buildtrees" -Recurse
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install qt5-tools:x64-windows-static
+        ${{env.VCPKG_ROOT}}\vcpkg.exe install qt5-tools:x64-windows-static-rel
         Remove-Item "${{env.VCPKG_ROOT}}\buildtrees" -Recurse
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install qt5-winextras:x64-windows-static
+        ${{env.VCPKG_ROOT}}\vcpkg.exe install qt5-winextras:x64-windows-static-rel
         ${{env.VCPKG_ROOT}}\vcpkg.exe install boost-circular-buffer:x64-windows-static libtorrent:x64-windows-static
         Remove-Item "${{env.VCPKG_ROOT}}\buildtrees" -Recurse
     # checkout the repo to the default working dir. repo files will be immediately at top-level in the default working dir.
@@ -104,11 +104,11 @@ jobs:
         SET PATH=${{env.VCPKG_ROOT}}\installed\x64-windows-static\tools\qt5\bin;%PATH%
         SET PATH=${{env.VCPKG_ROOT}}\downloads\tools\jom\jom-1.1.3;%PATH%
         lupdate.exe -extensions c,cpp,h,hpp,ui .
-        qmake.exe qbittorrent.pro
+        qmake.exe qbittorrent.pro "CONFIG += static release"
         CHDIR src
         qmake.exe src.pro
 
-        jom.exe -j2 -f Makefile.Release
+        jom.exe .
     # create a folder with the artifacts that will be exported
     - name: "copy application artifacts to export folder"
       shell: pwsh
