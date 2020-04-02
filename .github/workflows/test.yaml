@@ -15,6 +15,10 @@ jobs:
       QBT_TOOLS_BASE_PATH: C:\qbt_tools
       VCPKG_COMMIT_ID: e1fc03c474a311ea658f5c2178c434c91776c9d9
     steps:
+    # checkout the repo to the default working dir. repo files will be immediately at top-level in the default working dir.
+    # so, for example the path to README.md is just .\README.md and not .\qBittorrent\README.md
+    - name: checkout qBittorrent
+      uses: actions/checkout@v2
     # install vcpkg first - the author of this action actually recommeds using vcpkg as a submodule
     # whether or not that is the best choice for us remains to be seen.
     # for now, we're not using it as a submodule and we're just doing the setup,
@@ -54,10 +58,6 @@ jobs:
         ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-tools:x64-windows-static
         ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-winextras:x64-windows-static
         ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build boost-circular-buffer:x64-windows-static libtorrent:x64-windows-static
-    # checkout the repo to the default working dir. repo files will be immediately at top-level in the default working dir.
-    # so, for example the path to README.md is just .\README.md and not .\qBittorrent\README.md
-    - name: checkout qBittorrent
-      uses: actions/checkout@v2
     # reallistically, file would be part of the project, not generated here
     # all non-essesntial stuff for a static x64 release build was removed, including comments
     # I left the win32-msvc part as-is at the end because I was not sure if it was needed or not
