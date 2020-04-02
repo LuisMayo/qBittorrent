@@ -105,7 +105,7 @@ jobs:
         CHDIR src
         qmake.exe src.pro
 
-        jom.exe .
+        jom.exe 
     # create a folder with the artifacts that will be exported
     - name: "copy application artifacts to export folder"
       shell: pwsh
