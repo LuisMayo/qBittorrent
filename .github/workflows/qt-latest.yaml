@@ -30,9 +30,9 @@ jobs:
         boost-circular-buffer:x64-windows-static
         libtorrent:x64-windows-static
         qt5-base[latest]:x64-windows-static
-        qt5[latest]-svg:x64-windows-static
-        qt5[latest]-tools:x64-windows-static
-        qt5[latest]-winextras:x64-windows-static
+        qt5-svg[latest]:x64-windows-static
+        qt5-tools[latest]:x64-windows-static
+        qt5-winextras:x64-windows-static
         '@ | Out-File -NoNewLine -Encoding UTF8NoBOM ${{ env.vcpkgResponseFile }}
       
     # Cache/Restore the vcpkg's build artifacts.
