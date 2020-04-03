@@ -46,13 +46,13 @@ jobs:
       uses: lukka/run-vcpkg@v1
       with:
         vcpkgGitCommitId: ${{env.VCPKG_COMMIT_ID}}
-        vcpkgDirectory: ${{env.QBT_TOOLS_BASE_PATH}}\vcpkg
+        vcpkgDirectory: ${{ env.QBT_TOOLS_BASE_PATH }}\vcpkg
         setupOnly: true
         
     - name: install dependencies
       shell: pwsh
       run: |
-        Add-Content ${{env.VCPKG_ROOT}}\triplets\x64-windows-static.cmake -Value "set(VCPKG_BUILD_TYPE release)"
+        Add-Content "${{env.VCPKG_ROOT}}\triplets\x64-windows-static.cmake" -Value "set(VCPKG_BUILD_TYPE release)"
         ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build @'${{ env.vcpkgResponseFile }}'
         
     - name: adjust/generate conf.pri
