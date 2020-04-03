@@ -1,4 +1,4 @@
-name: qbittorrent nightly builds
+name: qbittorrent nightly builds (qtlatest)
  
 on:
   push:
