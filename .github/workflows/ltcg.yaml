@@ -1,0 +1,115 @@
+name: qbittorrent nightly builds ltcg
+ 
+on:
+  push:
+    branches: [ test-workflow ]
+
+# NOTE: stuff inside ${{}} gets evaluated by the GitHub Actions system before anything else
+# see the docs for "context" in GitHub Actions
+jobs:
+  win_vcpkg_test_nightly_release_build:
+    name: "qBittorrent nightly build with vcpkg+qmake (x64, static, ltcg)"
+    runs-on: windows-2019
+    # The vcpkg version can be adjusted here
+    env:
+      QBT_TOOLS_BASE_PATH: C:\qbt_tools
+      VCPKG_COMMIT_ID: e1fc03c474a311ea658f5c2178c434c91776c9d9
+      vcpkgResponseFile: C:\response_file.txt
+      vcpkgDest: C:\qbt_tools\vcpkg
+      
+    steps:
+    # checkout the repo to the default working dir. repo files will be immediately at top-level in the default working dir.
+    # so, for example the path to README.md is just .\README.md and not .\qBittorrent\README.md
+    - name: checkout qBittorrent
+      uses: actions/checkout@v2
+      
+    - name: generate vcpkg response_file
+      shell: pwsh
+      run: |
+        Write-Output @'
+        boost-circular-buffer:x64-windows-static
+        libtorrent:x64-windows-static
+        qt5-base:x64-windows-static
+        qt5-svg:x64-windows-static
+        qt5-tools:x64-windows-static
+        qt5-winextras:x64-windows-static
+        '@ | Out-File -NoNewLine -Encoding UTF8NoBOM ${{ env.vcpkgResponseFile }}
+      
+    # Cache/Restore the vcpkg's build artifacts.
+    - name: Cache vcpkg's artifacts
+      uses: actions/cache@v1
+      with:
+        path: ${{ env.vcpkgDest }}
+        # The key will be different each time a different version of vcpkg is used, or different ports are installed.
+        key: qbittorrent-x64-windows-static
+
+    - name: setup vcpkg
+      uses: lukka/run-vcpkg@v1
+      with:
+        vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+        vcpkgDirectory: ${{ env.vcpkgDest }}
+        setupOnly: true
+        
+    - name: install dependencies
+      shell: pwsh
+      run: |
+        Add-Content ${{env.VCPKG_ROOT}}\triplets\x64-windows-static.cmake -Value "set(VCPKG_BUILD_TYPE release)"
+        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build @${{ env.vcpkgResponseFile }}
+     
+    - name: adjust/generate conf.pri
+      shell: pwsh
+      run: |
+        Remove-Item conf.pri.windows
+        Write-Output @'
+        INCLUDEPATH += $$quote(${{env.VCPKG_ROOT}}\installed\x64-windows-static\include)
+        INCLUDEPATH += $$quote(${{env.VCPKG_ROOT}}\installed\x64-windows-static\include\boost)
+        
+        LIBS += $$quote(-L${{env.VCPKG_ROOT}}\installed\x64-windows-static\lib)
+        LIBS += torrent-rasterbar.lib boost_system-vc140-mt.lib zlib.lib libcrypto.lib libssl.lib
+
+        DEFINES += BOOST_ALL_NO_LIB
+        DEFINES += BOOST_SYSTEM_STATIC_LINK
+        DEFINES += TORRENT_NO_DEPRECATE
+
+        # Enable stack trace support
+        CONFIG += stacktrace
+
+        win32-msvc* {
+            QMAKE_CXXFLAGS += "/guard:cf /GL"
+            QMAKE_LFLAGS += "/guard:cf /OPT:REF /OPT:ICF /ltcg"
+        }
+        '@ | Out-File -NoNewLine -Encoding UTF8NoBOM conf.pri
+        
+    # just so that the cmd is ready to go with all the windows build tool paths and such
+    # for a x64 build with spectre mitigations
+    - name: enable Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1.1.0
+      with:
+        arch: amd64
+        spectre: true
+    # the actual build step, using the qmake method,
+    # after making sure the qt tools and jom are available and found first in the path.
+    # the jom version depends on the vcpkg version.
+    - name: build qBittorrent
+      shell: cmd
+      run: |
+        SET PATH=${{env.VCPKG_ROOT}}\installed\x64-windows-static\tools\qt5\bin;%PATH%
+        SET PATH=${{env.VCPKG_ROOT}}\downloads\tools\jom\jom-1.1.3;%PATH%
+        lupdate.exe -extensions c,cpp,h,hpp,ui .
+        qmake.exe qbittorrent.pro "CONFIG += static release"
+        CHDIR src
+        qmake.exe src.pro
+
+        jom.exe 
+    # create a folder with the artifacts that will be exported
+    - name: "copy application artifacts to export folder"
+      shell: pwsh
+      run: | 
+        New-Item -ItemType Directory -Path qBittorrent-nightly
+        Copy-Item .\src\release\qbittorrent.exe, src\release\qbittorrent.pdb -Destination qBittorrent-nightly-ltcg
+    # ...and upload zip with artifcats
+    - name: "upload artifact as zip"
+      uses: actions/upload-artifact@v1
+      with:
+        name: qBittorrent_nightly_ltcg
+        path: qBittorrent-nightly
