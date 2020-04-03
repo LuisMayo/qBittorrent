@@ -2,7 +2,7 @@ name: qbittorrent nightly builds
 
 on:
   push:
-    branches: [ master ]
+    branches: [ test-workflow ]
 
 # NOTE: stuff inside ${{}} gets evaluated by the GitHub Actions system before anything else
 # see the docs for "context" in GitHub Actions
@@ -14,27 +14,14 @@ jobs:
     env:
       QBT_TOOLS_BASE_PATH: C:\qbt_tools
       VCPKG_COMMIT_ID: e1fc03c474a311ea658f5c2178c434c91776c9d9
+      vcpkgResponseFile: ${{env.QBT_TOOLS_BASE_PATH}}\response_file.txt
+      
     steps:
     # checkout the repo to the default working dir. repo files will be immediately at top-level in the default working dir.
     # so, for example the path to README.md is just .\README.md and not .\qBittorrent\README.md
     - name: checkout qBittorrent
       uses: actions/checkout@v2
-    # install vcpkg first - the author of this action actually recommeds using vcpkg as a submodule
-    # whether or not that is the best choice for us remains to be seen.
-    # for now, we're not using it as a submodule and we're just doing the setup,
-    # because we might need the flexibility of customizing stuff before actually proceding with the dependency install.
-    # as a result of this action, the workflow environment variable VCPKG_ROOT will be defined with the path to this installation.
-    - name: setup vcpkg
-      uses: lukka/run-vcpkg@v1
-      with:
-        vcpkgGitCommitId: ${{env.VCPKG_COMMIT_ID}}
-        vcpkgDirectory: ${{env.QBT_TOOLS_BASE_PATH}}\vcpkg
-        setupOnly: true
-    # reallistically, this file would be part of the project, not generated here.
-    # this would be the place where the desired portfiles would be ajusted, e.g. to use a different libtorrent version
-    # than the one available via vcpkg. we would thus most likely maintain our own portfile for libtorrent at least.
-    # with this in mind, including vcpkg as a submodule with our own customizations starts to make a bit more sense
-    # Note: this is the powershell way of doing cat << 'EOF' > file.text ...
+      
     - name: generate vcpkg response_file
       shell: pwsh
       run: |
@@ -45,22 +32,26 @@ jobs:
         qt5-svg:x64-windows-static
         qt5-tools:x64-windows-static
         qt5-winextras:x64-windows-static
-        '@ | Out-File -NoNewLine -Encoding UTF8NoBOM ${{env.QBT_TOOLS_BASE_PATH}}\response_file.txt
-    # the magic happens here. WARNING: currently takes over 2 hours on GitHub Actions...
-    # ...and consumes ~54 GiB of space; the max available space is 14 GiB
-    # for this reason, even though this step completes successfully, further steps will fail with "terminal prompts disabled"
-    - name: install dependencies
-      shell: pwsh
-      run: |
-        Add-Content ${{env.VCPKG_ROOT}}\triplets\x64-windows-static.cmake -Value "set(VCPKG_BUILD_TYPE release)"
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-base:x64-windows-static
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-svg:x64-windows-static
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-tools:x64-windows-static
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-winextras:x64-windows-static
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build boost-circular-buffer:x64-windows-static libtorrent:x64-windows-static
-    # reallistically, file would be part of the project, not generated here
-    # all non-essesntial stuff for a static x64 release build was removed, including comments
-    # I left the win32-msvc part as-is at the end because I was not sure if it was needed or not
+        '@ | Out-File -NoNewLine -Encoding UTF8NoBOM ${{env.vcpkgResponseFile}}
+      
+    # Cache/Restore the vcpkg's build artifacts.
+    - name: Cache vcpkg's artifacts
+      uses: actions/cache@v1
+      with:
+        path: ${{ github.workspace }}/vcpkg/
+        # The key will be different each time a different version of vcpkg is used, or different ports are installed.
+        key: ${{ hashFiles( env.vcpkgResponseFile ) }}-${{ hashFiles('.git/modules/vcpkg/HEAD') }}-${{ runner.os }}
+
+    # Download, build vcpkg, install requested ports. If content is restored by the previous step,
+    # it is a no-op. 
+    - name: Run vcpkg
+      uses: lukka/run-vcpkg@v1
+      with:
+       # Response file stored in source control, it provides the list of ports and triplet(s).
+        vcpkgArguments: '@${{ env.vcpkgResponseFile }}' --clean-after-build
+       # Location of the vcpkg as submodule of the repository.
+        vcpkgDirectory: '${{ github.workspace }}/vcpkg'    
+    
     - name: adjust/generate conf.pri
       shell: pwsh
       run: |
@@ -85,6 +76,7 @@ jobs:
             QMAKE_LFLAGS_RELEASE += "/OPT:REF /OPT:ICF"
         }
         '@ | Out-File -NoNewLine -Encoding UTF8NoBOM conf.pri
+        
     # just so that the cmd is ready to go with all the windows build tool paths and such
     # for a x64 build with spectre mitigations
     - name: enable Developer Command Prompt
