@@ -1,0 +1,55 @@
+name: qt x64 static build
+
+on:
+  push:
+    branches: [ libtorrent-build ]
+
+# NOTE: stuff inside ${{}} gets evaluated by the GitHub Actions system before anything else
+# see the docs for "context" in GitHub Actions
+jobs:
+  win_vcpkg_test_nightly_release_build:
+    name: "qt x64 static build (vcpkg)"
+    runs-on: windows-2019
+    # The vcpkg version can be adjusted here
+    env:
+      VCPKG_COMMIT_ID: e1fc03c474a311ea658f5c2178c434c91776c9d9
+    steps:
+    - name: setup vcpkg
+      uses: lukka/run-vcpkg@v1
+      with:
+        vcpkgGitCommitId: ${{env.VCPKG_COMMIT_ID}}
+        vcpkgDirectory: ${{env.QBT_TOOLS_BASE_PATH}}\vcpkg
+        setupOnly: true
+    - name: downloading libtorrent
+      shell: pwsh
+      run: |
+        INVOKE-REQUEST https://github.com/arvidn/libtorrent/archive/libtorrent-1_2_5.zip -OutFile libtorrent.zip
+    - name: unzipping libtorrent
+      uses: montudor/action-zip@v0.1.0
+      with:
+        args: zip -qq -r libtorrent.zip C:/libtorrent-build/
+    - name: installing dependencies
+      shell: pwsh
+      run: |
+        Add-Content ${{env.VCPKG_ROOT}}\triplets\x64-windows-static.cmake -Value "set(VCPKG_BUILD_TYPE release)"
+        ${{env.VCPKG_ROOT}}\vcpkg.exe install openssl:x64-windows-static boost-system:x64-windows-static boost-date-time:x64-windows-static boost-chrono:x64-windows-static boost-random:x64-windows-static boost-asio:x64-windows-static boost-crc:x64-windows-static boost-config:x64-windows-static boost-iterator:x64-windows-static boost-scope-exit:x64-windows-static boost-multiprecision:x64-windows-static
+    - name: enable Developer Command Prompt
+      uses: ilammy/msvc-dev-cmd@v1.1.0
+      with:
+        arch: amd64
+        spectre: true
+    - name: building libtorrent
+      shell: cmd
+      run: |
+        pushd C:/libtorrent-build/
+        mkdir build
+        cd build
+        cmake .. -GNinja -DCMAKE_INSTALL_PREFIX=C:/libtorrent -DVCPKG_TARGET_TRIPLET=x64-windows-static "-DCMAKE_TOOLCHAIN_FILE=${{env.VCPKG_ROOT}}/scripts/buildsystems/vcpkg.cmake" -DCMAKE_BUILD_TYPE=Release -DVCPKG_CRT_LINKAGE=static -Dstatic_runtime=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=C:/libtorrent 
+        ninja install
+        
+    # ...and upload zip with artifcats
+    - name: "upload artifact as zip"
+      uses: actions/upload-artifact@v1
+      with:
+        name: libtorrent_build
+        path: C:/libtorrent
