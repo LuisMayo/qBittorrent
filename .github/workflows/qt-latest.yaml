@@ -8,7 +8,7 @@ on:
 # see the docs for "context" in GitHub Actions
 jobs:
   win_vcpkg_test_nightly_release_build:
-    name: "qBittorrent nightly build with vcpkg+qmake (x64, static)"
+    name: "qBittorrent nightly build with vcpkg+qmake (x64, static, qtlatest)"
     runs-on: windows-2019
     # The vcpkg version can be adjusted here
     env:
@@ -30,9 +30,9 @@ jobs:
         boost-circular-buffer:x64-windows-static
         libtorrent:x64-windows-static
         qt5-base[latest]:x64-windows-static
-        qt5-svg[latest]:x64-windows-static
-        qt5-tools[latest]:x64-windows-static
-        qt5-winextras[latest]:x64-windows-static
+        qt5[latest]-svg:x64-windows-static
+        qt5[latest]-tools:x64-windows-static
+        qt5[latest]-winextras:x64-windows-static
         '@ | Out-File -NoNewLine -Encoding UTF8NoBOM ${{ env.vcpkgResponseFile }}
       
     # Cache/Restore the vcpkg's build artifacts.

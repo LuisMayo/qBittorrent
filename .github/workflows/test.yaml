@@ -8,7 +8,7 @@ on:
 # see the docs for "context" in GitHub Actions
 jobs:
   win_vcpkg_test_nightly_release_build:
-    name: "qBittorrent-qtlatest nightly build with vcpkg+qmake (x64, static)"
+    name: "qBittorrent nightly build with vcpkg+qmake (x64, static)"
     runs-on: windows-2019
     # The vcpkg version can be adjusted here
     env:
