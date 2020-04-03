@@ -53,6 +53,7 @@ jobs:
     - name: install dependencies
       shell: pwsh
       run: |
+        Add-Content ${{env.VCPKG_ROOT}}\triplets\x64-windows-static.cmake -Value "set(VCPKG_BUILD_TYPE release)"
         ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build @${{ env.vcpkgResponseFile }}
      
     - name: adjust/generate conf.pri
