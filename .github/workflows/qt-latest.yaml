@@ -1,4 +1,4 @@
-name: qbittorrent-qtlatest nightly builds
+name: qbittorrent nightly builds
  
 on:
   push:
@@ -8,7 +8,7 @@ on:
 # see the docs for "context" in GitHub Actions
 jobs:
   win_vcpkg_test_nightly_release_build:
-    name: "qBittorrent-qtlatest nightly build with vcpkg+qmake (x64, static)"
+    name: "qBittorrent nightly build with vcpkg+qmake (x64, static)"
     runs-on: windows-2019
     # The vcpkg version can be adjusted here
     env:
@@ -29,10 +29,10 @@ jobs:
         Write-Output @'
         boost-circular-buffer:x64-windows-static
         libtorrent:x64-windows-static
-        qt5-base:x64-windows-static
-        qt5-svg:x64-windows-static
-        qt5-tools:x64-windows-static
-        qt5-winextras:x64-windows-static
+        qt5-base[latest]:x64-windows-static
+        qt5-svg[latest]:x64-windows-static
+        qt5-tools[latest]:x64-windows-static
+        qt5-winextras[latest]:x64-windows-static
         '@ | Out-File -NoNewLine -Encoding UTF8NoBOM ${{ env.vcpkgResponseFile }}
       
     # Cache/Restore the vcpkg's build artifacts.
@@ -53,9 +53,8 @@ jobs:
     - name: install dependencies
       shell: pwsh
       run: |
-        Add-Content ${{env.VCPKG_ROOT}}\triplets\x64-windows-static.cmake -Value "set(VCPKG_BUILD_TYPE release)"
         ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build @${{ env.vcpkgResponseFile }}
-     
+   
     - name: adjust/generate conf.pri
       shell: pwsh
       run: |
