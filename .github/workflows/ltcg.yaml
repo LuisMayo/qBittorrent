@@ -106,10 +106,10 @@ jobs:
       shell: pwsh
       run: | 
         New-Item -ItemType Directory -Path qBittorrent-nightly
-        Copy-Item .\src\release\qbittorrent.exe, src\release\qbittorrent.pdb -Destination qBittorrent-nightly-ltcg
+        Copy-Item .\src\release\qbittorrent.exe, src\release\qbittorrent.pdb -Destination qBittorrent-nightly
     # ...and upload zip with artifcats
     - name: "upload artifact as zip"
       uses: actions/upload-artifact@v1
       with:
-        name: qBittorrent_nightly_ltcg
-        path: qBittorrent-nightly-ltcg
+        name: qBittorrent_nightly
+        path: qBittorrent-nightly
