@@ -1,4 +1,4 @@
-name: qbittorrent nightly builds
+name: qt x64 static build
 
 on:
   push:
@@ -8,11 +8,10 @@ on:
 # see the docs for "context" in GitHub Actions
 jobs:
   win_vcpkg_test_nightly_release_build:
-    name: "qBittorrent nightly build with vcpkg+qmake (x64, static)"
+    name: "qt x64 static build (vcpkg)"
     runs-on: windows-2019
     # The vcpkg version can be adjusted here
     env:
-      QBT_TOOLS_BASE_PATH: C:\qbt_tools
       VCPKG_COMMIT_ID: e1fc03c474a311ea658f5c2178c434c91776c9d9
     steps:
     - name: setup vcpkg
@@ -21,14 +20,14 @@ jobs:
         vcpkgGitCommitId: ${{env.VCPKG_COMMIT_ID}}
         vcpkgDirectory: ${{env.QBT_TOOLS_BASE_PATH}}\vcpkg
         setupOnly: true
-    - name: install dependencies
+    - name: building
       shell: pwsh
       run: |
         Add-Content ${{env.VCPKG_ROOT}}\triplets\x64-windows-static.cmake -Value "set(VCPKG_BUILD_TYPE release)"
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-base:x64-windows-static
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-svg:x64-windows-static
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-tools:x64-windows-static
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-winextras:x64-windows-static
+        ${{env.VCPKG_ROOT}}\vcpkg.exe install qt5-base:x64-windows-static
+        ${{env.VCPKG_ROOT}}\vcpkg.exe install qt5-svg:x64-windows-static
+        ${{env.VCPKG_ROOT}}\vcpkg.exe install qt5-tools:x64-windows-static
+        ${{env.VCPKG_ROOT}}\vcpkg.exe install qt5-winextras:x64-windows-static
         ${{env.VCPKG_ROOT}}\vcpkg.exe export qt5-base:x64-windows-static qt5-svg:x64-windows-static qt5-tools:x64-windows-static qt5-winextras:x64-windows-static --raw --output=qt5-build
   
     # ...and upload zip with artifcats
