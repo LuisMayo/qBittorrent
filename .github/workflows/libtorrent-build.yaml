@@ -1,14 +1,14 @@
-name: qt x64 static build
+name: libtorrent x64 static build
 
 on:
   push:
-    branches: [ libtorrent-build ]
+    branches: [ libtorrent-action ]
 
 # NOTE: stuff inside ${{}} gets evaluated by the GitHub Actions system before anything else
 # see the docs for "context" in GitHub Actions
 jobs:
   win_vcpkg_test_nightly_release_build:
-    name: "qt x64 static build (vcpkg)"
+    name: "libtorrent x64 static build (vcpkg)"
     runs-on: windows-2019
     # The vcpkg version can be adjusted here
     env:
