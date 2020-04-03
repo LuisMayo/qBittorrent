@@ -112,4 +112,4 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: qBittorrent_nightly_ltcg
-        path: qBittorrent-nightly
+        path: qBittorrent-nightly-ltcg
