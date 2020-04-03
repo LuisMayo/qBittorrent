@@ -15,6 +15,7 @@ jobs:
       QBT_TOOLS_BASE_PATH: C:\qbt_tools
       VCPKG_COMMIT_ID: e1fc03c474a311ea658f5c2178c434c91776c9d9
       vcpkgResponseFile: C:\response_file.txt
+      vcpkgDest: C:\qbt_tools\vcpkg
       
     steps:
     # checkout the repo to the default working dir. repo files will be immediately at top-level in the default working dir.
@@ -38,22 +39,23 @@ jobs:
     - name: Cache vcpkg's artifacts
       uses: actions/cache@v1
       with:
-        path: ${{env.QBT_TOOLS_BASE_PATH}}\vcpkg
+        path: ${{ env.vcpkgDest }}
         # The key will be different each time a different version of vcpkg is used, or different ports are installed.
         key: ${{ hashFiles( env.vcpkgResponseFile ) }}-${{ hashFiles('.git/modules/vcpkg/HEAD') }}-${{ runner.os }}
 
     - name: setup vcpkg
       uses: lukka/run-vcpkg@v1
       with:
-        vcpkgGitCommitId: ${{env.VCPKG_COMMIT_ID}}
-        vcpkgDirectory: ${{ env.QBT_TOOLS_BASE_PATH }}\vcpkg
+        vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+        vcpkgDirectory: ${{ env.vcpkgDest }}
         setupOnly: true
         
     - name: install dependencies
       shell: pwsh
       run: |
-        Add-Content "${{env.VCPKG_ROOT}}\triplets\x64-windows-static.cmake" -Value "set(VCPKG_BUILD_TYPE release)"
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build @'${{ env.vcpkgResponseFile }}'
+        dir /s "${{env.VCPKG_ROOT}}"
+        Add-Content "${{ env.VCPKG_ROOT }}\triplets\x64-windows-static.cmake" -Value "set(VCPKG_BUILD_TYPE release)"
+        ${{ env.VCPKG_ROOT }}\vcpkg.exe install --clean-after-build @'${{ env.vcpkgResponseFile }}'
         
     - name: adjust/generate conf.pri
       shell: pwsh
