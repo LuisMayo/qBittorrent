@@ -30,8 +30,8 @@ jobs:
         boost-circular-buffer:x64-windows-static
         libtorrent:x64-windows-static
         qt5-base[latest]:x64-windows-static
-        qt5-svg[latest]:x64-windows-static
-        qt5-tools[latest]:x64-windows-static
+        qt5-svg:x64-windows-static
+        qt5-tools:x64-windows-static
         qt5-winextras:x64-windows-static
         '@ | Out-File -NoNewLine -Encoding UTF8NoBOM ${{ env.vcpkgResponseFile }}
       
@@ -41,7 +41,7 @@ jobs:
       with:
         path: ${{ env.vcpkgDest }}
         # The key will be different each time a different version of vcpkg is used, or different ports are installed.
-        key: ${{ env.VCPKG_COMMIT_ID }}-${{ runner.os }}-qt-latest
+        key: qbittorrent-x64-windows-static-qtlatest
 
     - name: setup vcpkg
       uses: lukka/run-vcpkg@v1
