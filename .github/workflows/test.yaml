@@ -14,7 +14,7 @@ jobs:
     env:
       QBT_TOOLS_BASE_PATH: C:\qbt_tools
       VCPKG_COMMIT_ID: e1fc03c474a311ea658f5c2178c434c91776c9d9
-      vcpkgResponseFile: C:\qbt_tools\response_file.txt
+      vcpkgResponseFile: C:\response_file.txt
       
     steps:
     # checkout the repo to the default working dir. repo files will be immediately at top-level in the default working dir.
@@ -32,7 +32,7 @@ jobs:
         qt5-svg:x64-windows-static
         qt5-tools:x64-windows-static
         qt5-winextras:x64-windows-static
-        '@ | Out-File -NoNewLine -Encoding UTF8NoBOM ${{env.vcpkgResponseFile}}
+        '@ | Out-File -NoNewLine -Encoding UTF8NoBOM ${{ env.vcpkgResponseFile }}
       
     # Cache/Restore the vcpkg's build artifacts.
     - name: Cache vcpkg's artifacts
@@ -53,12 +53,8 @@ jobs:
       shell: pwsh
       run: |
         Add-Content ${{env.VCPKG_ROOT}}\triplets\x64-windows-static.cmake -Value "set(VCPKG_BUILD_TYPE release)"
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-base:x64-windows-static
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-svg:x64-windows-static
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-tools:x64-windows-static
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build qt5-winextras:x64-windows-static
-        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build boost-circular-buffer:x64-windows-static libtorrent:x64-windows-static 
-    
+        ${{env.VCPKG_ROOT}}\vcpkg.exe install --clean-after-build @'${{ env.vcpkgResponseFile }}'
+        
     - name: adjust/generate conf.pri
       shell: pwsh
       run: |
