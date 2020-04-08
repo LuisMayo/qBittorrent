@@ -29,12 +29,12 @@
 #ifndef LOGLISTWIDGET_H
 #define LOGLISTWIDGET_H
 
-#include <QListWidget>
+#include <QListView>
 #include "base/logger.h"
 
 class QKeyEvent;
 
-class LogListWidget : public QListWidget
+class LogListWidget : public QListView
 {
     Q_OBJECT
 

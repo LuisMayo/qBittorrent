@@ -40,7 +40,7 @@
 #include "uithememanager.h"
 
 LogListWidget::LogListWidget(const int maxLines, const Log::MsgTypes &types, QWidget *parent)
-    : QListWidget(parent)
+    : QListView(parent)
     , m_maxLines(maxLines)
     , m_types(types)
 {
