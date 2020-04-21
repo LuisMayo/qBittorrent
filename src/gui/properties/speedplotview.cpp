@@ -32,6 +32,7 @@
 #include <QPainter>
 #include <QPen>
 #include "base/global.h"
+#include "base/logger.h"
 #include "base/unicodestrings.h"
 #include "base/utils/misc.h"
 
@@ -122,7 +123,7 @@ SpeedPlotView::Averager::Averager(int divider, boost::circular_buffer<PointData>
     , m_accumulator {}
 {
 }
-
+#include <iostream>
 void SpeedPlotView::Averager::push(const PointData &pointData)
 {
     // Accumulator overflow will be hit in worst case on longest used averaging span,
@@ -140,6 +141,19 @@ void SpeedPlotView::Averager::push(const PointData &pointData)
     for (int id = UP; id < NB_GRAPHS; ++id)
         m_accumulator.y[id] /= m_divider;
     m_accumulator.x /= m_divider;
+
+    const int invalidSpeed = std::pow<quint64>(2, 64) / 144;
+    if (std::find(std::begin(m_accumulator.y), std::end(m_accumulator.y), invalidSpeed) != std::end(m_accumulator.y)) {
+        LogMsg(tr("Invalid Speed detected in averager."), Log::CRITICAL);
+        std::cerr << "helo helo helo\n";
+        if (m_sink.empty()) {
+            m_accumulator = {};
+            return;
+        }
+        const PointData &previousData = m_sink.back();
+        std::copy(std::begin(previousData.y), std::end(previousData.y), std::begin(m_accumulator.y));
+    }
+
     // now flush out averaged data
     m_sink.push_back(m_accumulator);
     m_accumulator = {};
