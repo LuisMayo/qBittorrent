@@ -142,7 +142,7 @@ void SpeedPlotView::Averager::push(const PointData &pointData)
         m_accumulator.y[id] /= m_divider;
     m_accumulator.x /= m_divider;
 
-    const int invalidSpeed = std::pow<quint64>(2, 64) / 144;
+    const quint64 invalidSpeed = std::pow<quint64>(2, 64) / 144;
     if (std::find(std::begin(m_accumulator.y), std::end(m_accumulator.y), invalidSpeed) != std::end(m_accumulator.y)) {
         LogMsg(tr("Invalid Speed detected in averager."), Log::CRITICAL);
         std::cerr << "helo helo helo\n";
