@@ -31,6 +31,7 @@
 
 #include <QHash>
 #include <QMetaType>
+#include <QObject>
 #include <QSet>
 #include <QString>
 #include <QVector>
@@ -83,6 +84,27 @@ namespace BitTorrent
     {
         QString lastMessage;
         int numPeers = 0;
+    };
+
+    class PieceRequest : public QObject 
+    {
+        Q_OBJECT
+        Q_DISABLE_COPY(PieceRequest)
+
+    public:
+        PieceRequest(int index, QObject *parent = nullptr);
+
+        int index() const;
+
+        void notifyCompleteAndDie(const QByteArray &data);
+        void notifyErrorAndDie(const QString &message);
+
+    signals:
+        void complete(const QByteArray &data);
+        void error(const QString &message);
+
+    private:
+        const int m_index;
     };
 
     uint qHash(TorrentState key, uint seed);
@@ -288,6 +310,10 @@ namespace BitTorrent
         virtual void clearPeers() = 0;
 
         virtual QString createMagnetURI() const = 0;
+
+        virtual bool havePiece(int index) const = 0;
+        virtual const PieceRequest *setPieceDeadline(int index, int deadline) = 0; // reads piece when available
+        virtual const PieceRequest *readPiece(int index) = 0;
 
         void toggleSequentialDownload();
         void toggleFirstLastPiecePriority();

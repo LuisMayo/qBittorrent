@@ -231,6 +231,10 @@ namespace BitTorrent
 
         QString createMagnetURI() const override;
 
+        virtual bool havePiece(int index) const override;
+        virtual const PieceRequest *setPieceDeadline(int index, int deadline) override;
+        virtual const PieceRequest *readPiece(int index) override;
+
         bool needSaveResumeData() const;
 
         // Session interface
@@ -269,6 +273,7 @@ namespace BitTorrent
         void handleTrackerErrorAlert(const lt::tracker_error_alert *p);
         void handleTrackerReplyAlert(const lt::tracker_reply_alert *p);
         void handleTrackerWarningAlert(const lt::tracker_warning_alert *p);
+        void handleReadPieceAlert(const lt::read_piece_alert *p);
 
         void resume_impl(bool forced);
         bool isMoveInProgress() const;
@@ -290,6 +295,8 @@ namespace BitTorrent
         SpeedMonitor m_speedMonitor;
 
         InfoHash m_hash;
+
+        QVector<PieceRequest *> m_pieceRequests;
 
         // m_moveFinishedTriggers is activated only when the following conditions are met:
         // all file rename jobs complete, all file move jobs complete

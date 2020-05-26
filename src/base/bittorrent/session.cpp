@@ -4358,6 +4358,9 @@ void Session::dispatchTorrentAlert(const lt::alert *a)
     case lt::metadata_received_alert::alert_type:
         handleMetadataReceivedAlert(static_cast<const lt::metadata_received_alert*>(a));
         break;
+    case lt::read_piece_alert::alert_type:
+        handleReadPieceAlert(static_cast<const lt::read_piece_alert*>(a));
+        break;
     }
 }
 

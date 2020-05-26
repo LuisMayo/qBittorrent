@@ -150,14 +150,17 @@ if (STACKTRACE)
 endif()
 
 if (GUI)
-    target_link_libraries(qbt_app PRIVATE qbt_gui)
-    if ((CMAKE_SYSTEM_NAME STREQUAL "Windows") OR (CMAKE_SYSTEM_NAME STREQUAL "Darwin"))
-        if (Qt5_VERSION VERSION_LESS 5.14)
-            set_property(TARGET qbt_app APPEND PROPERTY QT_PLUGINS Qt5::QSvgIconPlugin Qt5::QSvgPlugin)
-        else()
-            qt_import_plugins(qbt_app INCLUDE Qt5::QSvgIconPlugin Qt5::QSvgPlugin)
-        endif()
-    endif()
+    target_link_libraries(qBittorrent PRIVATE qbt_gui)
+    set_target_properties(qBittorrent
+        PROPERTIES
+            OUTPUT_NAME qbittorrent
+            WIN32_EXECUTABLE False
+    )
+else()
+    set_target_properties(qBittorrent
+        PROPERTIES
+            OUTPUT_NAME qbittorrent-nox
+    )
 endif()
 
 if (WEBUI)
