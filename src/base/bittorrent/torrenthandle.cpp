@@ -31,6 +31,8 @@
 
 #include <type_traits>
 
+const QString QB_EXT {QStringLiteral(".!qB")};
+#include <QDebug>
 namespace BitTorrent
 {
     uint qHash(const TorrentState key, const uint seed)
@@ -47,12 +49,14 @@ namespace BitTorrent
 
     void PieceRequest::notifyCompleteAndDie(const QByteArray &data)
     {
+        qDebug() << "notifying complete" << data.size();
         emit complete(data);
         deleteLater();
     }
 
     void PieceRequest::notifyErrorAndDie(const QString &message)
     {
+        qDebug() << "notifying error" << message;
         emit error(message);
         deleteLater();
     }
