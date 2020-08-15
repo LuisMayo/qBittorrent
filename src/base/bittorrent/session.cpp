@@ -4273,7 +4273,6 @@ void Session::handleAlert(const lt::alert *a)
         case lt::fastresume_rejected_alert::alert_type:
         case lt::torrent_checked_alert::alert_type:
         case lt::metadata_received_alert::alert_type:
-        case lt::read_piece_alert::alert_type:
             dispatchTorrentAlert(a);
             break;
         case lt::state_update_alert::alert_type:
@@ -4285,11 +4284,9 @@ void Session::handleAlert(const lt::alert *a)
         case lt::file_error_alert::alert_type:
             handleFileErrorAlert(static_cast<const lt::file_error_alert*>(a));
             break;
-#if (LIBTORRENT_VERSION_NUM < 10208)
         case lt::read_piece_alert::alert_type:
             handleReadPieceAlert(static_cast<const lt::read_piece_alert*>(a));
             break;
-#endif
         case lt::add_torrent_alert::alert_type:
             handleAddTorrentAlert(static_cast<const lt::add_torrent_alert*>(a));
             break;
@@ -4358,10 +4355,6 @@ void Session::dispatchTorrentAlert(const lt::alert *a)
     switch (a->type()) {
     case lt::metadata_received_alert::alert_type:
         handleMetadataReceivedAlert(static_cast<const lt::metadata_received_alert*>(a));
-        break;
-    case lt::read_piece_alert::alert_type:
-        qDebug("Read piece alert");
-        handleReadPieceAlert(static_cast<const lt::read_piece_alert*>(a));
         break;
     }
 }
@@ -4530,15 +4523,19 @@ void Session::handleFileErrorAlert(const lt::file_error_alert *p)
     m_recentErroredTorrentsTimer->start();
 }
 
-#if (LIBTORRENT_VERSION_NUM < 10208)
 void Session::handleReadPieceAlert(const lt::read_piece_alert *p) const
 {
+#if (LIBTORRENT_VERSION_NUM < 10208)
     if (p->error) {
         p->handle.unset_flags(lt::torrent_flags::auto_managed);
         p->handle.force_recheck();
     }
-}
 #endif
+
+    TorrentHandleImpl *const torrent = m_torrents.value(p->handle.info_hash());
+    if (torrent)
+        torrent->handleAlert(p);
+}
 
 void Session::handlePortmapWarningAlert(const lt::portmap_error_alert *p)
 {
