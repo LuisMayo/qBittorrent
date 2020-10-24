@@ -35,7 +35,6 @@ const QString QB_EXT {QStringLiteral(".!qB")};
 #include <QDebug>
 namespace BitTorrent
 {
-    uint qHash(const TorrentState key, const uint seed)
     PieceRequest::PieceRequest(int index, QObject *parent)
         : QObject(parent)
         , m_index(index)

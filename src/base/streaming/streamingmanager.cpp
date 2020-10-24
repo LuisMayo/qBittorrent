@@ -91,11 +91,12 @@ void StreamingManager::addFile(int fileIndex, BitTorrent::TorrentHandle *torrent
 
     StreamFile *file = new StreamFile(fileIndex, torrentHandle, this);
     m_files.push_back(file);
-    // connect(BitTorrent::Session::instance(), &BitTorrent::Session::torrentAboutToBeRemoved, file, [this, torrentHandle, file](BitTorrent::TorrentHandle *handle) 
-    // {
-    //     if (handle == torrentHandle)
-    //         m_files.remove(m_files.indexOf(file));
-    // });
+    connect(BitTorrent::Session::instance(), &BitTorrent::Session::torrentAboutToBeRemoved, file, [this, torrentHandle, file](BitTorrent::TorrentHandle *handle) 
+    {
+        int deletedTorrentIndex = -1;
+        if (handle == torrentHandle && (deletedTorrentIndex = m_files.indexOf(file) != -1))
+            m_files.remove(m_files.indexOf(file));
+    });
 }
 
 QString StreamingManager::url(int fileIndex, BitTorrent::TorrentHandle *torrentHandle) const
