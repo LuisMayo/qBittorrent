@@ -104,7 +104,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
         ${qBittorrent_SOURCE_DIR}/dist/mac/qbittorrent_mac.icns
     )
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    set_target_properties(qbt_app PROPERTIES WIN32_EXECUTABLE ON)
+    set_target_properties(qbt_app PROPERTIES WIN32_EXECUTABLE OFF)
     if (MINGW)
         target_sources(qbt_app PRIVATE ${qBittorrent_SOURCE_DIR}/src/qbittorrent_mingw.rc)
     else()
