@@ -30,6 +30,8 @@
 #pragma once
 
 #include <QMetaType>
+#include <QObject>
+#include <QSet>
 #include <QString>
 #include <QtContainerFwd>
 
@@ -87,6 +89,27 @@ namespace BitTorrent
     {
         QString lastMessage;
         int numPeers = 0;
+    };
+
+    class PieceRequest : public QObject
+    {
+        Q_OBJECT
+        Q_DISABLE_COPY(PieceRequest)
+
+    public:
+        PieceRequest(int index, QObject *parent = nullptr);
+
+        int index() const;
+
+        void notifyComplete(const QByteArray &data);
+        void notifyError(const QString &message);
+
+    signals:
+        void complete(const QByteArray &data);
+        void error(const QString &message);
+
+    private:
+        const int m_index;
     };
 
     uint qHash(TorrentState key, uint seed);
@@ -292,6 +315,12 @@ namespace BitTorrent
 
         bool isResumed() const;
         qlonglong remainingSize() const;
+
+        virtual bool havePiece(int index) const = 0;
+        // PieceRequest is owned by callee
+        virtual PieceRequest *setPieceDeadline(int index, int deadline, bool readWhenAvailable) = 0;
+        virtual void resetPieceDeadline(int index) = 0;
+        virtual PieceRequest *readPiece(int index) = 0;
 
         void toggleSequentialDownload();
         void toggleFirstLastPiecePriority();

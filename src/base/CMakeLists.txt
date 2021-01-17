@@ -72,6 +72,8 @@ add_library(qbt_base STATIC
     search/searchhandler.h
     search/searchpluginmanager.h
     settingsstorage.h
+    streaming/streamingmanager.h
+    streaming/streamfile.h
     torrentfileguard.h
     torrentfilter.h
     types.h
@@ -150,6 +152,8 @@ add_library(qbt_base STATIC
     search/searchhandler.cpp
     search/searchpluginmanager.cpp
     settingsstorage.cpp
+    streaming/streamingmanager.cpp
+    streaming/streamfile.cpp
     torrentfileguard.cpp
     torrentfilter.cpp
     utils/bytearray.cpp

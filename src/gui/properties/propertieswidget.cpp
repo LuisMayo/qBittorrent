@@ -46,6 +46,7 @@
 #include "base/bittorrent/session.h"
 #include "base/bittorrent/torrent.h"
 #include "base/preferences.h"
+#include "base/streaming/streamingmanager.h"
 #include "base/unicodestrings.h"
 #include "base/utils/fs.h"
 #include "base/utils/misc.h"
@@ -660,6 +661,19 @@ void PropertiesWidget::displayFilesListMenu(const QPoint &)
                 m_propListModel->setData(index.sibling(index.row(), PRIORITY)
                     , static_cast<int>(priority));
             }
+        });
+    }
+
+    if (selectedRows.size() == 1 && m_propListModel->itemType(selectedRows[0]) == TorrentContentModelItem::FileType)   {
+        menu->addSeparator();
+
+        const QModelIndex index = selectedRows[0];
+        const int fileIndex = m_propListModel->getFileIndex(index);
+
+        QAction *playFile = menu->addAction(tr("Play"));
+        connect(playFile, &QAction::triggered, this, [this, fileIndex]() 
+        {
+            StreamingManager::instance()->playFile(fileIndex, m_torrent);
         });
     }
 

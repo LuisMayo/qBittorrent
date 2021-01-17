@@ -609,6 +609,7 @@ namespace BitTorrent
         void handleAlert(const lt::alert *a);
         void dispatchTorrentAlert(const lt::alert *a);
         void handleAddTorrentAlert(const lt::add_torrent_alert *p);
+        void handleReadPieceAlert(const lt::read_piece_alert *p) const;
         void handleStateUpdateAlert(const lt::state_update_alert *p);
         void handleMetadataReceivedAlert(const lt::metadata_received_alert *p);
         void handleFileErrorAlert(const lt::file_error_alert *p);
