@@ -1,6 +1,7 @@
 #include "streamfile.h"
 
 #include <QDebug>
+#include <QElapsedTimer>
 #include <QTimer>
 #include <QMimeType>
 #include <QMimeDatabase>
@@ -10,7 +11,8 @@
 
 namespace
 {
-    const int DEADLINE_TIME = 8;
+    const int MIN_DEADLINE_TIME = 32;
+    const int MAX_DEADLINE_TIME = 320;
     const int BUFFER_SIZE = 32 * 1024 * 1024; // 64 MiB
 
     struct PieceRange
@@ -27,6 +29,7 @@ public:
         , m_currentPosition(initialPosition)
         , m_leftSize(maxSize)
     {
+        m_timeSinceLastFeed.start();
     }
 
     ~ReadRequestPrivate()
@@ -43,6 +46,7 @@ public:
         m_currentPosition += data.size();
         m_leftSize -= data.size();
         m_isBlockPending = true;
+        m_timeSinceLastFeed.restart();
         emit bytesRead(data, (m_leftSize == 0));
     }
 
@@ -71,10 +75,16 @@ public:
         emit error(message);
     }
 
+    qint64 timeSinceLastFeed() const
+    {
+        return m_timeSinceLastFeed.elapsed();
+    }
+
 private:
     PieceRange m_advanceRange;
     quint64 m_currentPosition {};
     quint64 m_leftSize {};
+    QElapsedTimer m_timeSinceLastFeed;
 };
 
 bool ReadRequest::outstandingRead() const
@@ -149,12 +159,13 @@ void StreamFile::doRead(ReadRequestPrivate *request)
         return;
     }
 
+    const int deadlineTime = std::min<int>(std::max<int>(request->timeSinceLastFeed(), MIN_DEADLINE_TIME), MAX_DEADLINE_TIME);
     const BitTorrent::PieceFileInfo pieceInfo = m_torrent->info().mapFile(
         m_fileIndex, request->currentPosition(), std::min<quint64>(request->leftSize(), m_pieceLength));
     BitTorrent::PieceRequest *pieceRequest =
         m_torrent->havePiece(pieceInfo.index)
             ? m_torrent->readPiece(pieceInfo.index)
-            : m_torrent->setPieceDeadline(pieceInfo.index, DEADLINE_TIME, true);
+            : m_torrent->setPieceDeadline(pieceInfo.index, deadlineTime, true);
 
     Q_ASSERT(pieceRequest);
     pieceRequest->setParent(request);
@@ -183,7 +194,7 @@ void StreamFile::doRead(ReadRequestPrivate *request)
              pieceIndex <= advanceRange.end; pieceIndex++, i++)
         {
             if (!m_torrent->havePiece(pieceIndex))
-                m_torrent->setPieceDeadline(pieceIndex, DEADLINE_TIME * (i + 1), false); // prepare for next read
+                m_torrent->setPieceDeadline(pieceIndex, deadlineTime * (i + 1), false); // prepare for next read
         }
         request->setAdvanceRange(advanceRange);
     }
