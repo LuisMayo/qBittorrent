@@ -32,6 +32,8 @@
 #include <QtContainerFwd>
 #include <QObject>
 
+#include "boost/smart_ptr/shared_array.hpp"
+
 #include "base/pathfwd.h"
 #include "addtorrentparams.h"
 #include "categoryoptions.h"
@@ -469,5 +471,8 @@ namespace BitTorrent
         void trackerSuccess(Torrent *torrent, const QString &tracker);
         void trackerWarning(Torrent *torrent, const QString &tracker);
         void trackerEntriesUpdated(Torrent *torrent, const QHash<QString, TrackerEntry> &updatedTrackerEntries);
+
+        void torrentReadPieceFailed(Torrent *torrent, int pieceIndex, const QString &error);
+        void torrentReadPieceFinished(Torrent *torrent, int pieceIndex, const boost::shared_array<char> &data, int size);
     };
 }
