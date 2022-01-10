@@ -69,6 +69,51 @@ namespace Log
 
 Q_DECLARE_OPERATORS_FOR_FLAGS(Log::MsgTypes)
 
+#include <QAbstractListModel>
+
+template <typename T>
+class CircularBufferModel : public QAbstractListModel
+{
+public:
+    CircularBufferModel(const size_t maxSize, QObject *parent = nullptr)
+        : QAbstractListModel {parent}
+    {
+        m_data.set_capacity(maxSize);
+    }
+
+    void push(const T& data)
+    {
+        // if row is inserted on filled up buffer, the size will not change
+        // but because of calling of beginInsertRows function we'll have ghost rows.
+        if (m_data.size() == m_data.capacity())
+        {
+            const int last = static_cast<int>(m_data.size()) - 1;
+            beginRemoveRows(QModelIndex(), last, last);
+            m_data.pop_back();
+            endRemoveRows();
+        }
+
+        beginInsertRows(QModelIndex(), 0, 0);
+        m_data.push_front(m_data);
+        endInsertRows();
+    }
+
+    const T &data(const int index) const
+    {
+        Q_ASSERT((index > 0) && (index < m_data.size()));
+        return m_data[index];
+    }
+
+    int rowCount(const QModelIndex &parent) const override
+    {
+        Q_UNUSED(parent);
+        return m_data.size();
+    }
+
+private:
+    boost::circular_buffer_space_optimized<T> m_data;
+};
+
 class Logger : public QObject
 {
     Q_OBJECT
@@ -81,6 +126,10 @@ public:
 
     void addMessage(const QString &message, const Log::MsgType &type = Log::NORMAL);
     void addPeer(const QString &ip, bool blocked, const QString &reason = {});
+
+    Log::Msg getMessage(int id) const;
+    Log::Peer getPeer(int id) const;
+
     QVector<Log::Msg> getMessages(int lastKnownId = -1) const;
     QVector<Log::Peer> getPeers(int lastKnownId = -1) const;
 

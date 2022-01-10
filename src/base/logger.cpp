@@ -90,6 +90,25 @@ void Logger::addPeer(const QString &ip, const bool blocked, const QString &reaso
     emit newLogPeer(msg);
 }
 
+Log::Msg Logger::getMessage(int id) const
+{
+    const QReadLocker locker(&m_lock);
+    if ((id > m_messages.size()) || (id < 0))
+        return {};
+
+    return m_messages[id];
+}
+
+Log::Peer Logger::getPeer(int id) const
+{
+    const QReadLocker locker(&m_lock);
+    if ((id > m_messages.size()) || (id < 0))
+        return {};
+
+    return m_peers[id];
+
+}
+
 QVector<Log::Msg> Logger::getMessages(const int lastKnownId) const
 {
     const QReadLocker locker(&m_lock);
